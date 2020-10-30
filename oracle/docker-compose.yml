@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  oracledb:
+    image: wnameless/oracle-xe-11g-r2
+    container_name: oracle_container
+    restart: always
+    environment:
+      ORACLE_ALLOW_REMOTE: "true"
+      ORACLE_PASSWORD_VERIFY: "true"
+      ORACLE_DISABLE_ASYNCH_IO: "true"
+      ORACLE_ENABLE_XDB: "true"
+    ports:
+      - 8080:8080
+      - 49161:1521
+      - 22:22
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+    networks:
+      - oracle
+networks:
+  oracle:
+    driver: bridge
+volumes:
+  db_oracledata:
+    driver: local

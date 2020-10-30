@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - 2181:2181
+    container_name: zookeeper_container
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka_container
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_MESSAGE_MAX_BYTES: 2000000
+      KAFKA_CREATE_TOPICS: soadev-topic:5:1,devkafka-topic:5:1
+    links:
+      - zookeeper:zookeeper
+    depends_on:
+      - zookeeper

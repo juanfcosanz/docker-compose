@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+    wls:
+        image: store/oracle/weblogic:12.2.1.2
+        container_name: weblogic_node1_container
+        restart: unless-stopped
+        environment:
+            PATH=: usr/java/jdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/java/jdk-8/bin:/u01/oracle/oracle_common/common/bin:/u01/oracle/wlserver/common/bin
+            HOSTNAME: wls01
+            ADMINISTRATION_PORT_ENABLED: "true"
+            DOMAIN_NAME: base_domain
+            DOMAIN_HOME: /u01/oracle/user_projects/domains/base_domain
+            ADMIN_LISTEN_PORT: 7001
+            ADMIN_NAME: AdminServer
+            ADMINISTRATION_PORT: 9002
+            ADMIN_PORT: 8001
+            JAVA_VERSION: 1.8.0_241
+            JAVA_HOME: /usr/java/jdk-8
+            ORACLE_HOME: /u01/oracle
+            USER_MEM_ARGS: -Djava.security.egd=file:/dev/./urandom
+            SCRIPT_FILE: /u01/oracle/createAndStartEmptyDomain.sh
+            HOME: /u01/oracle
+        ports:
+            - 7001:7001
+            - 9002:9002
+            - 8001:8001
+        deploy:
+            resources:
+                limits:
+                    memory: 2g
+                reservations:
+                    memory: 1g
+        volumes:
+            - .properties/domain.properties:/u01/oracle/properties/domain.properties
+volumes:
+    wlsdata: {}

@@ -1,0 +1,42 @@
+version: '3.7'
+services:
+  elasticsearch:
+      image: elasticsearch:7.9.3
+      container_name: elasticsearch_container
+      hostname: elasticsearch
+      restart: always
+      environment:
+        - xpack.security.enabled=false
+        - discovery.type=single-node
+        - bootstrap.memory_lock=true
+        - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      ulimits:
+        memlock:
+          soft: -1
+          hard: -1
+      ports:
+        - 9200:9200
+      volumes:
+        - elasticsearchdata:/usr/share/elasticsearch/data
+      networks:
+         - elastic
+  kibana:
+      image: kibana:7.9.3
+      container_name: kibana_container
+      restart: always
+      environment:
+        ELASTICSEARCH_URL: "http://localhost:9200"
+      ports:
+        - 5601:5601
+      depends_on:
+        - elasticsearch
+      links:
+        - elasticsearch:elasticsearch
+      networks:
+        - elastic
+networks:
+  elastic:
+      driver: bridge
+volumes:
+  elasticsearchdata:
+      driver: local
