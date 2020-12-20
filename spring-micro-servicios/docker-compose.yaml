@@ -1,0 +1,154 @@
+version: '3.1'
+
+services:
+  postgres:
+        image: postgres:12-alpine
+        container_name: postgres
+        hostname: postgres
+        restart: always
+        volumes:
+          - ./postgres:/var/lib/postgresql/data
+        environment:
+          - POSTGRES_PASSWORD=root
+          - POSTGRES_USER=postgres
+          - POSTGRES_DB=spring_microservicios_cloud
+        ports:
+          - 5432:5432
+        networks:
+            - springcloud
+  mysql:
+        image: mysql:latest
+        container_name: mysql
+        hostname: mysql
+        ports:
+            - 13306:3306
+        command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+        restart: always
+        environment:
+            MYSQL_DATABASE: spring_microservicios_cloud
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_USER: mysql
+            MYSQL_PASSWORD: secret
+        volumes:
+            - ./mysql:/var/lib/mysql
+        networks:
+            - springcloud
+  broker-rabbitmq:
+        image: rabbitmq:3.8-management-alpine
+        container_name: broker-rabbitmq
+        hostname: broker-rabbitmq
+        ports:
+          - 15672:15672
+          - 5672:5672
+        restart: always
+        networks:
+            - springcloud
+  zipkin-server:
+        image: openzipkin/zipkin
+        container_name: zipkin-server
+        hostname: zipkin-server
+        ports:
+          - 9411:9411
+        restart: always
+        links:
+            - mysql:mysql
+            - broker-rabbitmq:broker-rabbitmq
+        depends_on: 
+          - broker-rabbitmq
+          - mysql
+        environment: 
+          RABBIT_ADDRESSES: broker-rabbitmq:5672
+          STORAGE_TYPE: mysql
+          MYSQL_USER: zipkin
+          MYSQL_PASS: zipkin
+          MYSQL_HOST: mysql
+        networks:
+          - springcloud
+  config-server:
+        image: micro-config-server:v1
+        ports:
+            - 8888:8888
+        container_name: config-server
+        restart: always
+        volumes:
+          - ./config_server:/tmp
+        networks:
+            - springcloud
+  eureka-server:
+        image: micro-eureka-server:v1
+        ports:
+            - 8761:8761
+        container_name: eureka-server
+        restart: always
+        networks:
+            - springcloud
+  micro-usuarios:
+        image: micro-usuarios:v1
+        ports:
+          - "8003"
+        container_name: micro-usuarios
+        restart: always
+        links:
+            - postgres:postgres
+        depends_on:
+            - postgres
+            - config-server
+            - eureka-server
+        networks:
+            - springcloud
+  micro-oauth:
+        image: micro-oauth:v1
+        ports:
+          - 9001:9001
+        container_name: micro-oauth
+        restart: always
+        depends_on:
+            - config-server
+            - eureka-server
+            - micro-usuarios
+        networks:
+            - springcloud
+  micro-items:
+        image: micro-items:v1
+        ports:
+          - 8002:8002
+          - 8005:8005
+          - 8007:8007
+        container_name: micro-items
+        restart: always
+        depends_on:
+            - config-server
+            - eureka-server
+            - micro-productos
+        networks:
+            - springcloud
+  micro-productos:
+        image: micro-productos:v1
+        container_name: micro-productos
+        restart: always
+        links:
+            - mysql:mysql
+        depends_on:
+            - mysql
+            - config-server
+            - eureka-server
+        networks:
+            - springcloud
+  zuul-api-gateway:
+        image: zuul-api-gateway:v1
+        ports:
+            - 8090:8090
+        container_name: zuul-api-gateway
+        restart: always
+        depends_on:
+            - micro-productos
+            - micro-items
+            - micro-usuarios
+            - micro-oauth
+            - config-server
+            - eureka-server
+        networks:
+            - springcloud
+networks:
+    springcloud:
+        driver: bridge
